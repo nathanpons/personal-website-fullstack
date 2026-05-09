@@ -53,9 +53,9 @@ variable "neon_api_key" {
 }
 
 variable "neon_org_id" {
-	description = "Organization ID for Neon"
-	type 				= string
-	sensitive 	= true
+  description = "Organization ID for Neon"
+  type        = string
+  sensitive   = true
 }
 
 # Variables for AWS RDS

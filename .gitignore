@@ -57,6 +57,7 @@ lighthouse-report.*
 
 # MCP
 mcp-servers.config.json
+.continue/
 
 # Terraform
 .terraform/

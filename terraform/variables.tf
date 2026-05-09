@@ -15,10 +15,10 @@ variable "domain_name" {
   type        = string
 }
 
-variable "backend_function_image_uri" {
-  description = "The URI of the container image for the backend Lambda function"
-  type        = string
-}
+# variable "backend_function_image_uri" {
+#   description = "The URI of the container image for the backend Lambda function"
+#   type        = string
+# }
 
 variable "certificate_arn" {
   description = "The ARN of the SSL certificate for the website"

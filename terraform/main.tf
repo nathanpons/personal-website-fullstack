@@ -445,7 +445,7 @@ resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
 resource "aws_lambda_function" "backend_function" {
   function_name = "${local.prefix}-backend-function"
   package_type  = "Image"
-  image_uri     = var.backend_function_image_uri
+  image_uri     = "${aws_ecr_repository.backend_repository.repository_url}:latest"
   timeout       = 30
   role          = aws_iam_role.lambda_execution_role.arn
 

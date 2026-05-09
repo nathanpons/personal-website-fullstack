@@ -596,7 +596,7 @@ resource "aws_apigatewayv2_stage" "default_stage" {
 resource "neon_project" "main" {
   name                      = "${local.prefix}-neon-db-project"
   pg_version                = "17"
-  region_id                 = var.aws_region
+  region_id                 = "aws-${var.aws_region}"
   org_id                    = var.neon_org_id
   history_retention_seconds = 21600 # 6 hours, max for free tier
 }

@@ -402,11 +402,11 @@ resource "aws_cloudfront_distribution" "cdn" {
   #   response_page_path = "/index.html"
   # }
 
-	depends_on = [ 
-		aws_apigatewayv2_api.api_gateway,
-		aws_apigatewayv2_integration.lambda_integration,
-		aws_apigatewayv2_stage.stage,
-	]
+  depends_on = [
+    aws_apigatewayv2_api.api_gateway,
+    aws_apigatewayv2_integration.lambda_integration,
+    aws_apigatewayv2_stage.stage,
+  ]
 }
 
 ## AWS Lambda Backend
@@ -597,7 +597,7 @@ resource "neon_project" "main" {
   name                      = "${local.prefix}-neon-db-project"
   pg_version                = "17"
   region_id                 = var.aws_region
-  org_id                    = "${local.prefix}-neon-org"
+  org_id                    = var.neon_org_id
   history_retention_seconds = 21600 # 6 hours, max for free tier
 }
 

@@ -604,7 +604,7 @@ resource "neon_database" "main_db" {
   project_id = neon_project.main.id
   branch_id  = neon_branch.main_branch.id
   name       = "${local.prefix}-neon-db"
-  owner_name = neon_role.neon_db_admin_role
+  owner_name = neon_role.neon_db_admin_role.name
 }
 
 resource "neon_role" "neon_db_admin_role" {

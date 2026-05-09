@@ -401,6 +401,12 @@ resource "aws_cloudfront_distribution" "cdn" {
   #   response_code      = 200
   #   response_page_path = "/index.html"
   # }
+
+	depends_on = [ 
+		aws_apigatewayv2_api.api_gateway,
+		aws_apigatewayv2_integration.lambda_integration,
+		aws_apigatewayv2_stage.stage,
+	]
 }
 
 ## AWS Lambda Backend

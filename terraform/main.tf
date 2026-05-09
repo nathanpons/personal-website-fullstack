@@ -405,7 +405,7 @@ resource "aws_cloudfront_distribution" "cdn" {
   depends_on = [
     aws_apigatewayv2_api.api_gateway,
     aws_apigatewayv2_integration.lambda_integration,
-    aws_apigatewayv2_stage.stage,
+    aws_apigatewayv2_stage.default_stage,
   ]
 }
 

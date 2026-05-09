@@ -619,6 +619,12 @@ resource "neon_role" "neon_db_admin_role" {
   name       = "${local.prefix}-neon-db-admin-role"
 }
 
+resource "neon_endpoint" "main_endpoint" {
+  project_id = neon_project.main.id
+  branch_id  = neon_branch.main_branch.id
+  type       = "read_write"
+}
+
 ## VPC and Networking
 resource "aws_vpc" "personal_website_vpc" {
   cidr_block = "10.0.0.0/16"

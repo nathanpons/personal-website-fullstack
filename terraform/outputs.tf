@@ -46,3 +46,8 @@ output "neon_project_main_branch_id" {
 output "neon_project_db_user" {
   value = neon_role.neon_db_admin_role.name
 }
+
+output "neon_user_password" {
+  value     = neon_role.neon_db_admin_role.password
+  sensitive = true
+}

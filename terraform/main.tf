@@ -616,6 +616,11 @@ resource "neon_role" "neon_db_admin_role" {
   name       = "${local.prefix}-neon-db-admin-role"
 }
 
+resource "neon_project_permission" "grant_access" {
+  project_id = neon_project.main.id
+  grantee    = var.neon_user_email
+}
+
 resource "neon_database" "main_db" {
   project_id = neon_project.main.id
   branch_id  = neon_branch.main_branch.id

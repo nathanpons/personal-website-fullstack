@@ -58,6 +58,11 @@ variable "neon_org_id" {
   sensitive   = true
 }
 
+variable "neon_user_email" {
+  description = "Email address for Neon user"
+  type        = string
+}
+
 # Variables for AWS RDS
 # variable "db_username" {
 #   description = "The username for the PostgreSQL database"

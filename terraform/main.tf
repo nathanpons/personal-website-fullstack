@@ -298,6 +298,10 @@ resource "aws_ecr_repository" "backend_repository" {
     scan_on_push = true
   }
 
+  lifecycle {
+    prevent_destroy = true
+  }
+
   tags = local.common_tags
 }
 

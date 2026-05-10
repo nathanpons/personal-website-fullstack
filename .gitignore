@@ -74,3 +74,6 @@ __pycache__/
 
 # Reports
 reports/
+
+# Neon
+.neon

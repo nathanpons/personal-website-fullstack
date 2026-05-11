@@ -68,6 +68,7 @@ terraform.rc
 crash.log
 crash.*.log
 terraform.tfvars
+state_backup.txt
 
 # Python
 .venv/

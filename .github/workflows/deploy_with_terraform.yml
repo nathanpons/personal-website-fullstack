@@ -123,7 +123,6 @@ jobs:
       needs.test-backend-dev.result == 'skipped') &&
       github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -134,7 +133,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-        
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
@@ -145,3 +144,6 @@ jobs:
             -var="aws_region=${{ env.AWS_REGION }}" \
             -var="domain_name=${{ secrets.DOMAIN_NAME }}"
 
+# Create and push image
+# aws ecr get-login-password --region <region> | docker login --username AWS --password-stdin <aws_account_id>.dkr.ecr.<region>.amazonaws.com
+# docker buildx build --platform linux/amd64 --output type=image,oci-mediatypes=false,push=true --provenance=false -t 242201278004.dkr.ecr.us-east-1.amazonaws.com/personal-website-stack-prod-backend-repository .

@@ -52,6 +52,12 @@ variable "neon_api_key" {
   sensitive   = true
 }
 
+variable "neon_org_api_key" {
+  description = "Org API key for Neon database access"
+  type        = string
+  sensitive   = true
+}
+
 variable "neon_org_id" {
   description = "Organization ID for Neon"
   type        = string

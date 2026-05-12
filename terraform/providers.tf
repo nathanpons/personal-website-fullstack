@@ -8,5 +8,5 @@ provider "aws" {
 }
 
 provider "neon" {
-  api_key = var.neon_api_key
+  api_key = var.neon_org_api_key
 }

@@ -456,10 +456,15 @@ resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
+data "aws_ecr_image" "latest_backend_image" {
+  repository_name = data.aws_ecr_repository.backend_repository.name
+  image_tag       = "latest"
+}
+
 resource "aws_lambda_function" "backend_function" {
   function_name = "${local.prefix}-backend-function"
   package_type  = "Image"
-  image_uri     = "${data.aws_ecr_repository.backend_repository.repository_url}:latest"
+  image_uri     = "${data.aws_ecr_repository.backend_repository.repository_url}@${data.aws_ecr_image.latest_backend_image.image_digest}"
   timeout       = 30
   role          = aws_iam_role.lambda_execution_role.arn
 

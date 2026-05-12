@@ -28,26 +28,26 @@ output "host_name" {
   value       = local.host_name
 }
 
-# Outputs from Neon
-output "neon_project_id" {
-  value = neon_project.main.id
-}
+# Outputs from Neon DB
+# output "neon_project_id" {
+#   value = neon_project.main.id
+# }
 
-output "neon_project_connection_uri" {
-  description = "Default connection URI for db primary branch (SENSITIVE)"
-  value       = neon_project.main.connection_uri
-  sensitive   = true
-}
+# output "neon_project_connection_uri" {
+#   description = "Default connection URI for db primary branch (SENSITIVE)"
+#   value       = neon_project.main.connection_uri
+#   sensitive   = true
+# }
 
-output "neon_project_main_branch_id" {
-  value = neon_branch.main_branch.id
-}
+# output "neon_project_main_branch_id" {
+#   value = neon_branch.main_branch.id
+# }
 
-output "neon_project_db_user" {
-  value = neon_role.neon_db_admin_role.name
-}
+# output "neon_project_db_user" {
+#   value = neon_role.neon_db_admin_role.name
+# }
 
-output "neon_user_password" {
-  value     = neon_role.neon_db_admin_role.password
-  sensitive = true
-}
+# output "neon_user_password" {
+#   value     = neon_role.neon_db_admin_role.password
+#   sensitive = true
+# }

@@ -290,23 +290,27 @@ resource "aws_cloudfront_origin_access_control" "oac" {
 }
 
 # ECR Repository for Lambda Edge Function
-## TODO: Research IMMUTABLE and see if it is worth doing
-resource "aws_ecr_repository" "backend_repository" {
-  name                 = "${local.prefix}-backend-repository"
-  image_tag_mutability = "MUTABLE"
-  image_scanning_configuration {
-    scan_on_push = true
-  }
+# ## TODO: Research IMMUTABLE and see if it is worth doing
+# resource "aws_ecr_repository" "backend_repository" {
+#   name                 = "${local.prefix}-backend-repository"
+#   image_tag_mutability = "MUTABLE"
+#   image_scanning_configuration {
+#     scan_on_push = true
+#   }
 
-  lifecycle {
-    prevent_destroy = true
-  }
+#   lifecycle {
+#     prevent_destroy = true
+#   }
 
-  tags = local.common_tags
+#   tags = local.common_tags
+# }
+
+data "aws_ecr_repository" "backend_repository" {
+  name = "${local.prefix}-backend-repository"
 }
 
 resource "aws_ecr_lifecycle_policy" "backend_repository_lifecycle_policy" {
-  repository = aws_ecr_repository.backend_repository.name
+  repository = data.aws_ecr_repository.backend_repository.name
   policy = jsonencode(
     {
       rules : [
@@ -339,18 +343,18 @@ resource "aws_cloudfront_distribution" "cdn" {
     }
   }
 
-  # origin {
-  #   origin_id   = "backend-origin"
-  #   domain_name = local.host_name
-  #   # origin_path = var.environment
+  origin {
+    origin_id   = "backend-origin"
+    domain_name = "${aws_apigatewayv2_api.api_gateway.id}.execute-api.${var.aws_region}.amazonaws.com"
+    # origin_path = var.environment
 
-  #   custom_origin_config {
-  #     http_port              = 80
-  #     https_port             = 443
-  #     origin_protocol_policy = "https-only"
-  #     origin_ssl_protocols   = ["TLSv1.2"]
-  #   }
-  # }
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
 
   aliases             = [var.domain_name, "www.${var.domain_name}"]
   default_root_object = "index.html"
@@ -373,19 +377,19 @@ resource "aws_cloudfront_distribution" "cdn" {
     lambda_function_association {
       event_type   = "viewer-request"
       include_body = false
-      lambda_arn   = aws_lambda_alias.www_redirect_function_alias.arn
+      lambda_arn   = aws_lambda_function.www_redirect_function.qualified_arn
     }
   }
 
-  # ordered_cache_behavior {
-  #   path_pattern             = "/api/*"
-  #   target_origin_id         = "backend-origin"
-  #   viewer_protocol_policy   = "redirect-to-https"
-  #   cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
-  #   origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
-  #   allowed_methods          = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
-  #   cached_methods           = ["GET", "HEAD"]
-  # }
+  ordered_cache_behavior {
+    path_pattern             = "/api/*"
+    target_origin_id         = "backend-origin"
+    viewer_protocol_policy   = "redirect-to-https"
+    cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+    origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
+    allowed_methods          = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods           = ["GET", "HEAD"]
+  }
 
   restrictions {
     geo_restriction {
@@ -455,7 +459,7 @@ resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
 resource "aws_lambda_function" "backend_function" {
   function_name = "${local.prefix}-backend-function"
   package_type  = "Image"
-  image_uri     = "${aws_ecr_repository.backend_repository.repository_url}:latest"
+  image_uri     = "${data.aws_ecr_repository.backend_repository.repository_url}:latest"
   timeout       = 30
   role          = aws_iam_role.lambda_execution_role.arn
 
@@ -551,7 +555,7 @@ resource "aws_apigatewayv2_api" "api_gateway" {
   protocol_type = "HTTP"
 
   cors_configuration {
-    allow_origins = ["https://${var.domain_name}", "https://www.${var.domain_name}"]
+    allow_origins = ["https://${var.domain_name}", "https://www.${var.domain_name}", "https://nasa.gov", "https://api.nasa.gov"]
     allow_headers = ["content-type", "authorization", "x-amz-date", "x-api-key"]
   }
 
@@ -597,50 +601,41 @@ resource "aws_apigatewayv2_stage" "default_stage" {
 # }
 
 ## Neon Postgres Database to replace Postgres Database (using free tier)
-resource "neon_project" "main" {
-  name                      = "${local.prefix}-neon-db-project"
-  pg_version                = "17"
-  region_id                 = "aws-${var.aws_region}"
-  org_id                    = var.neon_org_id
-  history_retention_seconds = 21600 # 6 hours, max for free tier
+# resource "neon_project" "main" {
+#   name                      = "${local.prefix}-neon-db-project"
+#   pg_version                = "17"
+#   region_id                 = "aws-${var.aws_region}"
+#   org_id                    = var.neon_org_id
+#   history_retention_seconds = 21600 # 6 hours, max for free tier
 
-  lifecycle {
-    prevent_destroy = true
-  }
-}
+#   lifecycle {
+#     prevent_destroy = true
+#   }
+# }
 
-resource "neon_branch" "main_branch" {
-  project_id = neon_project.main.id
-  name       = "${local.prefix}-main-branch"
-}
+# resource "neon_branch" "main_branch" {
+#   project_id = neon_project.main.id
+#   name       = "${local.prefix}-main-branch"
+# }
 
-resource "neon_role" "neon_db_admin_role" {
-  project_id = neon_project.main.id
-  branch_id  = neon_branch.main_branch.id
-  name       = "${local.prefix}-neon-db-admin-role"
-}
+# resource "neon_role" "neon_db_admin_role" {
+#   project_id = neon_project.main.id
+#   branch_id  = neon_branch.main_branch.id
+#   name       = "${local.prefix}-neon-db-admin-role"
+# }
 
-resource "neon_project_permission" "grant_access" {
-  project_id = neon_project.main.id
-  grantee    = var.neon_user_email
-}
+# resource "neon_database" "main_db" {
+#   project_id = neon_project.main.id
+#   branch_id  = neon_branch.main_branch.id
+#   name       = "${local.prefix}-neon-db"
+#   owner_name = neon_role.neon_db_admin_role.name
+# }
 
-resource "neon_database" "main_db" {
-  project_id = neon_project.main.id
-  branch_id  = neon_branch.main_branch.id
-  name       = "${local.prefix}-neon-db"
-  owner_name = neon_role.neon_db_admin_role.name
-}
-
-resource "neon_endpoint" "main_endpoint" {
-  project_id = neon_project.main.id
-  branch_id  = neon_branch.main_branch.id
-  type       = "read_write"
-}
-
-resource "neon_api_key" "api_key" {
-  name = var.neon_api_key
-}
+# resource "neon_endpoint" "main_endpoint" {
+#   project_id = neon_project.main.id
+#   branch_id  = neon_branch.main_branch.id
+#   type       = "read_write"
+# }
 
 ## VPC and Networking
 resource "aws_vpc" "personal_website_vpc" {

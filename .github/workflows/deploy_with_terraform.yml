@@ -143,7 +143,3 @@ jobs:
             -var="environment=staging" \
             -var="aws_region=${{ env.AWS_REGION }}" \
             -var="domain_name=${{ secrets.DOMAIN_NAME }}"
-
-# Create and push image
-# aws ecr get-login-password --region <region> | docker login --username AWS --password-stdin <aws_account_id>.dkr.ecr.<region>.amazonaws.com
-# docker buildx build --platform linux/amd64 --output type=image,oci-mediatypes=false,push=true --provenance=false -t 242201278004.dkr.ecr.us-east-1.amazonaws.com/personal-website-stack-prod-backend-repository .

@@ -122,7 +122,7 @@ router.get("/apod", cacheMiddleware(3600), async (req, res) => {
   } catch (error) {
     clearTimeout(timeoutId); // Clear timeout on error
     if (error.name === "AbortError") {
-      console.error("NASA APOD request timed out");
+      console.error("NASA APOD request timed out:", error);
       // Return fallback JSON object on timeout due to lack of nasa api support
       return res.status(200).json(fallbackResponse);
     } else if (error.code === "ENOTFOUND" || error.code === "EAI_AGAIN") {

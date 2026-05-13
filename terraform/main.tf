@@ -487,7 +487,7 @@ resource "aws_lambda_function" "backend_function" {
   environment {
     variables = {
       NASA_API_KEY                        = var.nasa_api_key
-      NEXT_PUBLIC_BASE_URL                = var.next_public_base_url
+      BASE_URL                            = var.next_public_base_url
       NODE_ENV                            = var.environment
       AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1"
       STATIC_BUCKET_NAME                  = data.aws_s3_bucket.static_files_bucket.id

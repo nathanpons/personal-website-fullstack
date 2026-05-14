@@ -479,10 +479,10 @@ resource "aws_lambda_function" "backend_function" {
   }
 
   # TEMP REMOVE VPC CONFIG
-  # vpc_config {
-  #   subnet_ids         = [for subnet in aws_subnet.public_subnets : subnet.id]
-  #   security_group_ids = [aws_security_group.lambda_security_group.id]
-  # }
+  vpc_config {
+    subnet_ids         = [for subnet in aws_subnet.public_subnets : subnet.id]
+    security_group_ids = [aws_security_group.lambda_security_group.id]
+  }
 
   environment {
     variables = {
@@ -672,14 +672,14 @@ resource "aws_security_group" "rds_security_group" {
     from_port   = 53
     to_port     = 53
     protocol    = "udp"
-    cidr_blocks = ["10.0.0.2/32"] # Route 53 Resolver
+    cidr_blocks = ["0.0.0.0/0"] # Route 53 Resolver
   }
 
   egress {
     from_port   = 53
     to_port     = 53
     protocol    = "tcp"
-    cidr_blocks = ["10.0.0.2/32"] # Route 53 Resolver
+    cidr_blocks = ["0.0.0.0/0"] # Route 53 Resolver
   }
 }
 

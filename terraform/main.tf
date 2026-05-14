@@ -560,14 +560,14 @@ resource "aws_apigatewayv2_api" "api_gateway" {
   protocol_type = "HTTP"
 
   cors_configuration {
-    # allow_origins = [
-    #   "https://${var.domain_name}",
-    #   "https://www.${var.domain_name}",
-    #   "https://nasa.gov",
-    #   "https://api.nasa.gov",
-    #   "https://apod.nasa.gov",
-    # ]
-    allow_origins = ["*"]
+    allow_origins = [
+      "https://${var.domain_name}",
+      "https://www.${var.domain_name}",
+      "https://nasa.gov",
+      "https://api.nasa.gov",
+      "https://apod.nasa.gov",
+    ]
+    # allow_origins = ["*"]
     allow_headers = ["content-type", "authorization", "x-amz-date", "x-api-key"]
   }
 

@@ -697,16 +697,9 @@ resource "aws_security_group" "lambda_security_group" {
   vpc_id      = aws_vpc.personal_website_vpc.id
 
   egress {
-    from_port   = 53
-    to_port     = 53
-    protocol    = "udp"
-    cidr_blocks = ["0.0.0.0/0"] # Route 53 Resolver
-  }
-
-  egress {
-    from_port   = 53
-    to_port     = 53
-    protocol    = "tcp"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"] # Route 53 Resolver
   }
 }

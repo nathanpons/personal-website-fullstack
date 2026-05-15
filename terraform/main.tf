@@ -656,40 +656,40 @@ resource "aws_vpc" "personal_website_vpc" {
   tags = local.common_tags
 }
 
-resource "aws_security_group" "rds_security_group" {
-  name        = "${local.prefix}-rds-security-group"
-  description = "Security group for postgres instance"
-  vpc_id      = aws_vpc.personal_website_vpc.id
+# resource "aws_security_group" "rds_security_group" {
+#   name        = "${local.prefix}-rds-security-group"
+#   description = "Security group for postgres instance"
+#   vpc_id      = aws_vpc.personal_website_vpc.id
 
-  ingress {
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.lambda_security_group.id]
-  }
+#   ingress {
+#     from_port       = 5432
+#     to_port         = 5432
+#     protocol        = "tcp"
+#     security_groups = [aws_security_group.lambda_security_group.id]
+#   }
 
-  egress {
-    from_port   = 53
-    to_port     = 53
-    protocol    = "udp"
-    cidr_blocks = ["0.0.0.0/0"] # Route 53 Resolver
-  }
+#   egress {
+#     from_port   = 53
+#     to_port     = 53
+#     protocol    = "udp"
+#     cidr_blocks = ["0.0.0.0/0"] # Route 53 Resolver
+#   }
 
-  egress {
-    from_port   = 53
-    to_port     = 53
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Route 53 Resolver
-  }
-}
+#   egress {
+#     from_port   = 53
+#     to_port     = 53
+#     protocol    = "tcp"
+#     cidr_blocks = ["0.0.0.0/0"] # Route 53 Resolver
+#   }
+# }
 
-resource "aws_vpc_security_group_egress_rule" "allow_https_outbound" {
-  security_group_id = aws_security_group.lambda_security_group.id
-  cidr_ipv4         = "0.0.0.0/0"
-  ip_protocol       = "tcp"
-  from_port         = 443
-  to_port           = 443
-}
+# resource "aws_vpc_security_group_egress_rule" "allow_https_outbound" {
+#   security_group_id = aws_security_group.lambda_security_group.id
+#   cidr_ipv4         = "0.0.0.0/0"
+#   ip_protocol       = "tcp"
+#   from_port         = 443
+#   to_port           = 443
+# }
 
 resource "aws_security_group" "lambda_security_group" {
   name        = "${local.prefix}-lambda-security-group"
@@ -700,16 +700,16 @@ resource "aws_security_group" "lambda_security_group" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"] # Route 53 Resolver
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
-resource "aws_db_subnet_group" "db_subnet_group" {
-  name       = "${local.prefix}-db-subnet-group"
-  subnet_ids = [for subnet in aws_subnet.private_subnets : subnet.id]
+# resource "aws_db_subnet_group" "db_subnet_group" {
+#   name       = "${local.prefix}-db-subnet-group"
+#   subnet_ids = [for subnet in aws_subnet.private_subnets : subnet.id]
 
-  tags = local.common_tags
-}
+#   tags = local.common_tags
+# }
 
 resource "aws_subnet" "public_subnets" {
   count                   = 1
@@ -723,16 +723,16 @@ resource "aws_subnet" "public_subnets" {
   })
 }
 
-resource "aws_subnet" "private_subnets" {
-  count             = 2 # Need at least 2 private subnets for RDS Multi-AZ deployment, even if we aren't using Multi-AZ right now. This allows for easier future scaling and better availability.
-  vpc_id            = aws_vpc.personal_website_vpc.id
-  cidr_block        = "10.0.${count.index + 10}.0/24" # Start private subnets at .10 to avoid overlap with public subnets
-  availability_zone = "${var.aws_region}${local.availability_zone_letters[count.index]}"
+# resource "aws_subnet" "private_subnets" {
+#   count             = 2 # Need at least 2 private subnets for RDS Multi-AZ deployment, even if we aren't using Multi-AZ right now. This allows for easier future scaling and better availability.
+#   vpc_id            = aws_vpc.personal_website_vpc.id
+#   cidr_block        = "10.0.${count.index + 10}.0/24" # Start private subnets at .10 to avoid overlap with public subnets
+#   availability_zone = "${var.aws_region}${local.availability_zone_letters[count.index]}"
 
-  tags = merge(local.common_tags, {
-    Name = "${local.prefix}-private-subnet-${count.index + 1}"
-  })
-}
+#   tags = merge(local.common_tags, {
+#     Name = "${local.prefix}-private-subnet-${count.index + 1}"
+#   })
+# }
 
 resource "aws_route_table" "public_route_table" {
   vpc_id = aws_vpc.personal_website_vpc.id

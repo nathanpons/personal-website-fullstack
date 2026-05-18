@@ -76,6 +76,7 @@ __pycache__/
 
 # Reports
 reports/
+cucumber-output/
 
 # Neon
 .neon

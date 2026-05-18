@@ -1,0 +1,12 @@
+{
+  "formatOptions": {
+    "snippetInterface": "async-await",
+    "snippetLanguage": "typescript",
+    "supportFilePath": "./step-definitions"
+  },
+  "defaultOutputFormat": "json",
+  "defaultOutputDir": "./cucumber-output",
+  "defaultStorageDir": "./cucumber-storage",
+  "retry": 2,
+  "retryTimeout": 10000
+}

@@ -1,0 +1,9 @@
+{
+  "name": "control-bar-tests",
+  "private": true,
+  "scripts": {
+    "test:control-bar": "ts-node -r tsconfig-paths/register ./cucumber.ts",
+    "test:watch": "cucumber-js -f json:cucumber-output/report.json ./frontend/src/app/components/solarsystem/__tests__/controlBar.feature -p ./frontend/src/app/components/solarsystem/__tests__/step-definitions/controlBar.steps.ts",
+    "test:format": "cucumber-js -f pretty ./frontend/src/app/components/solarsystem/__tests__/controlBar.feature -p ./frontend/src/app/components/solarsystem/__tests__/step-definitions/controlBar.steps.ts"
+  }
+}

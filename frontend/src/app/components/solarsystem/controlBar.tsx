@@ -51,7 +51,7 @@ export default function ControlBar({
           className="toggle-button"
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          {isExpanded ? "−" : "+"}
+          {isExpanded ? "-" : "+"}
         </button>
       </div>
 

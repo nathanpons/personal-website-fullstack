@@ -3,21 +3,11 @@ import { Builder, WebDriver } from "selenium-webdriver";
 export let driverInstance: WebDriver;
 
 // Initialize driver
-export async function initDriver(): Promise<void> {
+export async function initDriver(): Promise<WebDriver> {
   if (!driverInstance) {
-    driverInstance = await new Builder()
-      .forBrowser("chrome")
-      .setChromeOptions(
-        new (require("selenium-webdriver/chrome").ChromeOptions().setTimeouts)({
-          pageLoad: 60000,
-          initial: 0,
-          implicit: 30000,
-        }),
-      )
-      .build();
+    driverInstance = await new Builder().forBrowser("chrome").build();
   }
-
-  console.log("Driver initialized successfully");
+  return driverInstance;
 }
 
 // Close driver
@@ -49,7 +39,7 @@ export async function getCurrentUrl(): Promise<string> {
 
 export async function getDriver(): Promise<WebDriver> {
   if (!driverInstance) {
-    await initDriver();
+    const driverInstance = await initDriver();
   }
   return driverInstance;
 }

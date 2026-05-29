@@ -403,12 +403,11 @@ resource "aws_cloudfront_distribution" "cdn" {
     response_page_path = "/index.html"
   }
 
-  # Unclear if I want this custom error response or not
-  # custom_error_response {
-  #   error_code         = 404
-  #   response_code      = 200
-  #   response_page_path = "/index.html"
-  # }
+  custom_error_response {
+    error_code         = 404
+    response_code      = 200
+    response_page_path = "/index.html"
+  }
 
   depends_on = [
     aws_apigatewayv2_api.api_gateway,

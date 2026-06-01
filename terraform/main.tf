@@ -117,8 +117,28 @@ resource "aws_s3_bucket_ownership_controls" "frontend_bucket_ownership_controls"
 }
 
 ## Frontend S3 Bucket Policy
+data "aws_iam_policy_document" "cloudfront_s3_leverage" {
+  statement {
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.frontend_bucket.arn}/*"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["://amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceArn"
+      values   = [aws_cloudfront_distribution.cdn.arn]
+    }
+  }
+}
+
 resource "aws_s3_bucket_policy" "frontend_bucket_policy" {
   bucket = aws_s3_bucket.frontend_bucket.id
+  # policy = data.aws_iam_policy_document.cloudfront_s3_leverage.json
+
   policy = jsonencode(
     {
       Version : "2012-10-17",

@@ -124,7 +124,7 @@ data "aws_iam_policy_document" "cloudfront_s3_leverage" {
 
     principals {
       type        = "Service"
-      identifiers = ["://amazonaws.com"]
+      identifiers = ["://amazonaws.com"] # TODO FIX: This causes a malformed policy error
     }
 
     condition {

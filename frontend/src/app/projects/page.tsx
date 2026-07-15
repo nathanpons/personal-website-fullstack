@@ -27,7 +27,7 @@ export default function ProjectsPage() {
     <div className="page-shell">
       <main className="page-main">
         <section className="fade-trigger">
-          <div className="container mx-auto px-4 py-8">
+          <div className="container mx-auto px-4 pt-8">
             <h1>Projects</h1>
             {/* Opening statement */}
             <p className="mt-6 text-lg text-slate-100">
@@ -56,7 +56,7 @@ export default function ProjectsPage() {
 
         <section className="fade-trigger">
           {/* Project List */}
-          <div className="pt-12 my-24 border-t border-slate-700/60">
+          <div className="pt-12 border-t border-slate-700/60">
             <h2 className="text-2xl font-semibold my-12">Project List</h2>
             {projectLinks.map((link) => (
               <Link

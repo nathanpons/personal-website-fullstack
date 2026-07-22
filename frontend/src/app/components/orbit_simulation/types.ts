@@ -1,8 +1,8 @@
 import * as THREE from "three";
 
 export interface CelestialBody {
-  id: string;
-  name: string;
+  id: number;
+  name?: string;
   color: string;
   mass: number;
   radius: number;

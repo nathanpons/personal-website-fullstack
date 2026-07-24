@@ -99,8 +99,8 @@ const ThreeBodySimulation: React.FC = () => {
       {bodies.map((body, index) => (
         <mesh
           key={body.id}
-          ref={(el) => {
-            meshRefs.current[index] = el;
+          ref={(ref) => {
+            meshRefs.current[index] = ref;
           }}
           position={body.position.toArray()}
         >

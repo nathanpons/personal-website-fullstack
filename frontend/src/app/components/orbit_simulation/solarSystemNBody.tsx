@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { CelestialBody } from "./types";
 
 const G = 1; // Gravitational constant
+// Real constant is G ≈ 6.674×10⁻¹¹
 
 const ThreeBodySimulation: React.FC = () => {
   // Initial state setup with type safety

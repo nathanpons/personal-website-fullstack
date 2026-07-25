@@ -25,15 +25,15 @@ const ThreeBodySimulation: React.FC = () => {
       position: new THREE.Vector3(3, -2, 0),
       velocity: new THREE.Vector3(-1, -0.02, 0.01),
       color: "cyan",
-      radius: 0.4,
+      radius: 0.2,
     },
     {
       id: 3,
       mass: 50,
       position: new THREE.Vector3(0, 0, 0),
       velocity: new THREE.Vector3(0.01, -0.03, -0.01),
-      color: "magenta",
-      radius: 0.6,
+      color: "yellow",
+      radius: 1,
     },
   ]);
 

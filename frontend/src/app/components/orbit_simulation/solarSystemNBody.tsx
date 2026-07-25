@@ -29,7 +29,7 @@ const ThreeBodySimulation: React.FC = () => {
     },
     {
       id: 3,
-      mass: 50,
+      mass: 200,
       position: new THREE.Vector3(0, 0, 0),
       velocity: new THREE.Vector3(0.01, -0.03, -0.01),
       color: "yellow",

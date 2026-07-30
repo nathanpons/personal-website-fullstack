@@ -15,7 +15,7 @@ const ThreeBodySimulation: React.FC = () => {
       id: 1,
       mass: 50,
       position: new THREE.Vector3(-3, 2, 0),
-      velocity: new THREE.Vector3(0.01, 0.05, 0),
+      velocity: new THREE.Vector3(0.01, 5, 0),
       color: "red",
       radius: 0.4,
     },
@@ -29,11 +29,11 @@ const ThreeBodySimulation: React.FC = () => {
     },
     {
       id: 3,
-      mass: 200,
+      mass: 50,
       position: new THREE.Vector3(0, 0, 0),
       velocity: new THREE.Vector3(0.01, -0.03, -0.01),
-      color: "yellow",
-      radius: 1,
+      color: "magenta",
+      radius: 0.6,
     },
   ]);
 
@@ -47,8 +47,8 @@ const ThreeBodySimulation: React.FC = () => {
     // Deep copy structures to keep state immutability
     const newBodies = bodies.map((b) => ({
       ...b,
-      pos: b.position.clone(),
-      vel: b.velocity.clone(),
+      position: b.position.clone(),
+      velocity: b.velocity.clone(),
     }));
 
     // Initialize an array of zeroed force vectors
@@ -59,8 +59,8 @@ const ThreeBodySimulation: React.FC = () => {
       for (let j = 0; j < newBodies.length; j++) {
         if (i !== j) {
           const deltaVec = new THREE.Vector3().subVectors(
-            newBodies[j].pos,
-            newBodies[i].pos,
+            newBodies[j].position,
+            newBodies[i].position,
           );
           const distance = deltaVec.length();
 
@@ -79,13 +79,13 @@ const ThreeBodySimulation: React.FC = () => {
     // Apply forces to update velocities and positions
     newBodies.forEach((body, index) => {
       const acceleration = forces[index].divideScalar(body.mass); // a = F / m
-      body.vel.addScaledVector(acceleration, dt); // v = v + a * dt
-      body.pos.addScaledVector(body.vel, dt); // x = x + v * dt
+      body.velocity.addScaledVector(acceleration, dt); // v = v + a * dt
+      body.position.addScaledVector(body.velocity, dt); // x = x + v * dt
 
       // Directly write to the raw three.js mesh position for 60fps performance
       const mesh = meshRefs.current[index];
       if (mesh) {
-        mesh.position.copy(body.pos);
+        mesh.position.copy(body.position);
       }
     });
 
@@ -100,8 +100,8 @@ const ThreeBodySimulation: React.FC = () => {
       {bodies.map((body, index) => (
         <mesh
           key={body.id}
-          ref={(ref) => {
-            meshRefs.current[index] = ref;
+          ref={(el) => {
+            meshRefs.current[index] = el;
           }}
           position={body.position.toArray()}
         >
@@ -120,15 +120,17 @@ const ThreeBodySimulation: React.FC = () => {
 
 export default function App() {
   return (
-    <Canvas
-      camera={{ position: [-64, 16, 16], fov: 45 }}
-      style={{ width: "100vw", height: "100vh", background: "#050505" }}
-    >
-      <GizmoHelper alignment="top-left" margin={[80, 80]}>
-        <GizmoViewcube />
-      </GizmoHelper>
-      <ThreeBodySimulation />
-      <OrbitControls />
-    </Canvas>
+    <div className="canvas-container">
+      <Canvas
+        camera={{ position: [-64, 16, 16], fov: 45 }}
+        style={{ background: "#050505" }}
+      >
+        <GizmoHelper alignment="top-left" margin={[80, 80]}>
+          <GizmoViewcube />
+        </GizmoHelper>
+        <ThreeBodySimulation />
+        <OrbitControls />
+      </Canvas>
+    </div>
   );
 }

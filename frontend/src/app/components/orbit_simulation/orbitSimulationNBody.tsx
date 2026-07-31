@@ -18,16 +18,16 @@ const initialBodies: CelestialBody[] = [
   {
     id: 1,
     mass: 50,
-    position: new THREE.Vector3(-3, 0, 0),
-    velocity: new THREE.Vector3(0, 0, -2),
+    position: new THREE.Vector3(-2, 0, 0),
+    velocity: new THREE.Vector3(0, 0, -1.5),
     color: "red",
     radius: 0.4,
   },
   {
     id: 2,
     mass: 50,
-    position: new THREE.Vector3(3, 0, 0),
-    velocity: new THREE.Vector3(0, 0, 2),
+    position: new THREE.Vector3(2, 0, 0),
+    velocity: new THREE.Vector3(0, 0, 1.5),
     color: "cyan",
     radius: 0.4,
   },
@@ -162,7 +162,7 @@ export default function App() {
         onReset={handleReset}
       />
       <Canvas
-        camera={{ position: [0, 32, 0], fov: 90 }}
+        camera={{ position: [0, 8, 0], fov: 90 }}
         style={{ background: "#050505" }}
       >
         <GizmoHelper alignment="top-left" margin={[80, 80]}>

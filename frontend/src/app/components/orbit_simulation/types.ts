@@ -9,3 +9,10 @@ export interface CelestialBody {
   position: THREE.Vector3;
   velocity: THREE.Vector3;
 }
+
+export interface SimulationProps {
+  isPaused: boolean;
+  timeScale: number;
+  bodies: CelestialBody[];
+  setBodies: React.Dispatch<React.SetStateAction<CelestialBody[]>>;
+}

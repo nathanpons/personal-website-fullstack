@@ -106,7 +106,7 @@ const ThreeBodySimulation: React.FC<SimulationProps> = ({
         <Trail
           key={body.id}
           width={body.radius * 2} // Width of the trail ribbon
-          length={12} // Number of points in the trail
+          length={70} // Number of points in the trail
           color={body.color} // Color matching the body
           attenuation={(t) => t * t} // Fade-out curve
         >
@@ -162,7 +162,7 @@ export default function App() {
         onReset={handleReset}
       />
       <Canvas
-        camera={{ position: [0, 32, 0], fov: 45 }}
+        camera={{ position: [0, 32, 0], fov: 90 }}
         style={{ background: "#050505" }}
       >
         <GizmoHelper alignment="top-left" margin={[80, 80]}>

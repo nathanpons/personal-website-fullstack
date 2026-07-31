@@ -1,15 +1,18 @@
 "use client";
 import React, { useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, GizmoHelper, GizmoViewcube } from "@react-three/drei";
+import {
+  OrbitControls,
+  GizmoHelper,
+  GizmoViewcube,
+  Trail,
+} from "@react-three/drei";
 import * as THREE from "three";
 import { CelestialBody } from "./types";
 
-const G = 1; // Gravitational constant
-// Real constant is G ≈ 6.674×10⁻¹¹
+const G = 1;
 
 const ThreeBodySimulation: React.FC = () => {
-  // Initial state setup with type safety
   const [bodies, setBodies] = useState<CelestialBody[]>([
     {
       id: 1,
@@ -37,24 +40,19 @@ const ThreeBodySimulation: React.FC = () => {
     },
   ]);
 
-  // Typed ref array for the 3D meshes
   const meshRefs = useRef<(THREE.Mesh | null)[]>([]);
 
   useFrame((_, delta) => {
-    // Clamp delta to prevent massive physics jumps on frame drops
     const dt = Math.min(delta, 0.1);
 
-    // Deep copy structures to keep state immutability
     const newBodies = bodies.map((b) => ({
       ...b,
       position: b.position.clone(),
       velocity: b.velocity.clone(),
     }));
 
-    // Initialize an array of zeroed force vectors
     const forces = newBodies.map(() => new THREE.Vector3(0, 0, 0));
 
-    // Calculate Gravitational forces between all distinct pairs
     for (let i = 0; i < newBodies.length; i++) {
       for (let j = 0; j < newBodies.length; j++) {
         if (i !== j) {
@@ -64,7 +62,6 @@ const ThreeBodySimulation: React.FC = () => {
           );
           const distance = deltaVec.length();
 
-          // Smooth gravity at ultra-short distances to avoid infinite force singularities
           if (distance > 0.2) {
             const forceMagnitude =
               (G * newBodies[i].mass * newBodies[j].mass) /
@@ -76,7 +73,6 @@ const ThreeBodySimulation: React.FC = () => {
       }
     }
 
-    // Apply forces to update velocities and positions
     newBodies.forEach((body, index) => {
       const acceleration = forces[index].divideScalar(body.mass); // a = F / m
       body.velocity.addScaledVector(acceleration, dt); // v = v + a * dt
@@ -89,7 +85,6 @@ const ThreeBodySimulation: React.FC = () => {
       }
     });
 
-    // Save calculation data back into state
     setBodies(newBodies);
   });
 
@@ -98,21 +93,28 @@ const ThreeBodySimulation: React.FC = () => {
       <ambientLight intensity={0.5} />
       <pointLight position={[10, 10, 10]} intensity={1.5} />
       {bodies.map((body, index) => (
-        <mesh
+        <Trail
           key={body.id}
-          ref={(el) => {
-            meshRefs.current[index] = el;
-          }}
-          position={body.position.toArray()}
+          width={body.radius * 2} // Width of the trail ribbon
+          length={12} // Number of points in the trail
+          color={body.color} // Color matching the body
+          attenuation={(t) => t * t} // Fade-out curve
         >
-          <sphereGeometry args={[body.radius, 32, 32]} />
-          <meshStandardMaterial
-            color={body.color}
-            emissive={body.color}
-            emissiveIntensity={0.3}
-            roughness={0.2}
-          />
-        </mesh>
+          <mesh
+            ref={(el) => {
+              meshRefs.current[index] = el;
+            }}
+            position={body.position.toArray()}
+          >
+            <sphereGeometry args={[body.radius, 32, 32]} />
+            <meshStandardMaterial
+              color={body.color}
+              emissive={body.color}
+              emissiveIntensity={0.3}
+              roughness={0.2}
+            />
+          </mesh>
+        </Trail>
       ))}
     </>
   );

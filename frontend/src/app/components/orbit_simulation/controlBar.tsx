@@ -5,30 +5,24 @@ import { useState } from "react";
 interface ControlBarProps {
   timeScale: number;
   onTimeScaleChange: (newScale: number) => void;
-  selectedPlanet: string | null;
-  onPlanetSelect: (planetId: string | null) => void;
-  showOrbits: boolean;
-  onShowOrbitsToggle: (show: boolean) => void;
   isPaused: boolean;
   onPauseToggle: (paused: boolean) => void;
+  onReset: () => void;
 }
 
 export default function ControlBar({
   timeScale,
   onTimeScaleChange,
-  selectedPlanet,
-  onPlanetSelect,
-  showOrbits,
-  onShowOrbitsToggle,
   isPaused,
   onPauseToggle,
+  onReset,
 }: ControlBarProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
   return (
     <div className="control-bar">
       <div className="control-bar-header">
-        <h3>Solar System Controls</h3>
+        <h3>Orbit Sim Controls</h3>
         <button
           className="toggle-button"
           onClick={() => setIsExpanded(!isExpanded)}
@@ -73,11 +67,8 @@ export default function ControlBar({
 
           {/* Reset Camera Button */}
           <div className="control-group">
-            <button
-              className="reset-button"
-              onClick={() => onPlanetSelect(null)}
-            >
-              Reset Camera
+            <button className="reset-button" onClick={() => onReset()}>
+              Reset Simulation
             </button>
           </div>
         </div>

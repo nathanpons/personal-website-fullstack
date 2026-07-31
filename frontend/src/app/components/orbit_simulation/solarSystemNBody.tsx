@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import {
   OrbitControls,
@@ -8,42 +8,52 @@ import {
   Trail,
 } from "@react-three/drei";
 import * as THREE from "three";
-import { CelestialBody } from "./types";
+import { CelestialBody, SimulationProps } from "./types";
+import ControlBar from "./controlBar";
+import "./controlBar.css";
 
 const G = 1;
 
-const ThreeBodySimulation: React.FC = () => {
-  const [bodies, setBodies] = useState<CelestialBody[]>([
-    {
-      id: 1,
-      mass: 50,
-      position: new THREE.Vector3(-3, 2, 0),
-      velocity: new THREE.Vector3(0.01, 5, 0),
-      color: "red",
-      radius: 0.4,
-    },
-    {
-      id: 2,
-      mass: 50,
-      position: new THREE.Vector3(3, -2, 0),
-      velocity: new THREE.Vector3(-1, -0.02, 0.01),
-      color: "cyan",
-      radius: 0.2,
-    },
-    {
-      id: 3,
-      mass: 50,
-      position: new THREE.Vector3(0, 0, 0),
-      velocity: new THREE.Vector3(0.01, -0.03, -0.01),
-      color: "magenta",
-      radius: 0.6,
-    },
-  ]);
+const initialBodies: CelestialBody[] = [
+  {
+    id: 1,
+    mass: 50,
+    position: new THREE.Vector3(-3, 2, 0),
+    velocity: new THREE.Vector3(0.01, 5, 0),
+    color: "red",
+    radius: 0.4,
+  },
+  {
+    id: 2,
+    mass: 50,
+    position: new THREE.Vector3(3, -2, 0),
+    velocity: new THREE.Vector3(-1, -0.02, 0.01),
+    color: "cyan",
+    radius: 0.2,
+  },
+  {
+    id: 3,
+    mass: 50,
+    position: new THREE.Vector3(0, 0, 0),
+    velocity: new THREE.Vector3(0.01, -0.03, -0.01),
+    color: "magenta",
+    radius: 0.6,
+  },
+];
 
+const ThreeBodySimulation: React.FC<SimulationProps> = ({
+  isPaused,
+  timeScale,
+  bodies,
+  setBodies,
+}) => {
   const meshRefs = useRef<(THREE.Mesh | null)[]>([]);
 
   useFrame((_, delta) => {
-    const dt = Math.min(delta, 0.1);
+    // If paused skip all calculations
+    if (isPaused || timeScale === 0) return;
+
+    const dt = Math.min(delta, 0.1) * timeScale;
 
     const newBodies = bodies.map((b) => ({
       ...b,
@@ -121,8 +131,35 @@ const ThreeBodySimulation: React.FC = () => {
 };
 
 export default function App() {
+  const [isPaused, setIsPaused] = useState(true);
+  const [timeScale, setTimeScale] = useState(1);
+  const [bodies, setBodies] = useState<CelestialBody[]>(
+    initialBodies.map((b) => ({
+      ...b,
+      position: b.position.clone(),
+      velocity: b.velocity.clone(),
+    })),
+  );
+  const handleReset = useCallback(() => {
+    // Reset positions back to initial setup
+    setBodies(
+      initialBodies.map((b) => ({
+        ...b,
+        position: b.position.clone(),
+        velocity: b.velocity.clone(),
+      })),
+    );
+  }, []);
+
   return (
     <div className="canvas-container">
+      <ControlBar
+        timeScale={timeScale}
+        onTimeScaleChange={setTimeScale}
+        isPaused={isPaused}
+        onPauseToggle={setIsPaused}
+        onReset={handleReset}
+      />
       <Canvas
         camera={{ position: [-64, 16, 16], fov: 45 }}
         style={{ background: "#050505" }}
@@ -130,7 +167,12 @@ export default function App() {
         <GizmoHelper alignment="top-left" margin={[80, 80]}>
           <GizmoViewcube />
         </GizmoHelper>
-        <ThreeBodySimulation />
+        <ThreeBodySimulation
+          isPaused={isPaused}
+          timeScale={timeScale}
+          bodies={bodies}
+          setBodies={setBodies}
+        />
         <OrbitControls />
       </Canvas>
     </div>

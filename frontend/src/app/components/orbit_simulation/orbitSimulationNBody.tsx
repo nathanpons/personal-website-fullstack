@@ -18,27 +18,27 @@ const initialBodies: CelestialBody[] = [
   {
     id: 1,
     mass: 50,
-    position: new THREE.Vector3(-3, 2, 0),
-    velocity: new THREE.Vector3(0.01, 5, 0),
+    position: new THREE.Vector3(-3, 0, 0),
+    velocity: new THREE.Vector3(0, 0, -2),
     color: "red",
     radius: 0.4,
   },
   {
     id: 2,
     mass: 50,
-    position: new THREE.Vector3(3, -2, 0),
-    velocity: new THREE.Vector3(-1, -0.02, 0.01),
+    position: new THREE.Vector3(3, 0, 0),
+    velocity: new THREE.Vector3(0, 0, 2),
     color: "cyan",
-    radius: 0.2,
+    radius: 0.4,
   },
-  {
-    id: 3,
-    mass: 50,
-    position: new THREE.Vector3(0, 0, 0),
-    velocity: new THREE.Vector3(0.01, -0.03, -0.01),
-    color: "magenta",
-    radius: 0.6,
-  },
+  // {
+  //   id: 3,
+  //   mass: 50,
+  //   position: new THREE.Vector3(0, 0, 0),
+  //   velocity: new THREE.Vector3(0.01, -0.03, -0.01),
+  //   color: "magenta",
+  //   radius: 0.6,
+  // },
 ];
 
 const ThreeBodySimulation: React.FC<SimulationProps> = ({
@@ -142,6 +142,7 @@ export default function App() {
   );
   const handleReset = useCallback(() => {
     // Reset positions back to initial setup
+    setIsPaused(true);
     setBodies(
       initialBodies.map((b) => ({
         ...b,
@@ -149,7 +150,6 @@ export default function App() {
         velocity: b.velocity.clone(),
       })),
     );
-    setIsPaused(true);
   }, []);
 
   return (
@@ -162,7 +162,7 @@ export default function App() {
         onReset={handleReset}
       />
       <Canvas
-        camera={{ position: [-64, 16, 16], fov: 45 }}
+        camera={{ position: [0, 32, 0], fov: 45 }}
         style={{ background: "#050505" }}
       >
         <GizmoHelper alignment="top-left" margin={[80, 80]}>

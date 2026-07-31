@@ -149,6 +149,7 @@ export default function App() {
         velocity: b.velocity.clone(),
       })),
     );
+    setIsPaused(true);
   }, []);
 
   return (

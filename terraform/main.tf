@@ -631,6 +631,7 @@ resource "aws_apigatewayv2_stage" "default_stage" {
 #   tags = local.common_tags
 # }
 
+# TODO: Add neon db
 ## Neon Postgres Database to replace Postgres Database (using free tier)
 # resource "neon_project" "main" {
 #   name                      = "${local.prefix}-neon-db-project"

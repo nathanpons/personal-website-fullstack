@@ -16,41 +16,40 @@
     "test:format": "cucumber-js -f pretty ./frontend/src/app/components/solarsystem/__tests__/controlBar.feature -p ./frontend/src/app/components/solarsystem/__tests__/step-definitions/controlBar.steps.ts"
   },
   "dependencies": {
-    "@react-three/drei": "^10.7.7",
-    "@react-three/fiber": "^9.4.2",
-    "next": "^16.0.10",
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
-    "three": "^0.182.0",
-    "zustand": "^5.0.14"
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.2",
+    "next": "^16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "three": "^0.186.1",
+    "zustand": "^5.0.16"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^6.6.4",
-    "@testing-library/react": "^16.3.0",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.0.1",
-    "@types/react": "^19.2.7",
-    "@types/selenium-webdriver": "^4.35.5",
-    "@types/three": "^0.185.1",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/selenium-webdriver": "^4.35.7",
+    "@types/three": "^0.186.0",
     "gh-pages": "^6.3.0",
-    "jest": "^30.0.5",
-    "jest-cucumber": "^4.5.0",
-    "jest-environment-jsdom": "^30.0.5",
-    "selenium-webdriver": "^4.44.0",
+    "jest": "^30.5.2",
+    "jest-environment-jsdom": "^30.5.2",
+    "selenium-webdriver": "^4.51.0",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.2"
   },
   "optionalDependencies": {
-    "@next/swc-darwin-arm64": "15.3.3",
-    "@next/swc-darwin-x64": "15.3.3",
-    "@next/swc-linux-x64-gnu": "15.3.3",
-    "@next/swc-linux-x64-musl": "15.3.3",
-    "lightningcss-darwin-arm64": "^1.27.0",
-    "lightningcss-darwin-x64": "^1.27.0",
-    "lightningcss-linux-x64-gnu": "^1.27.0",
-    "lightningcss-linux-x64-musl": "^1.27.0"
+    "@next/swc-darwin-arm64": "16.4.3",
+    "@next/swc-darwin-x64": "16.4.3",
+    "@next/swc-linux-x64-gnu": "16.4.3",
+    "@next/swc-linux-x64-musl": "16.4.3",
+    "lightningcss-darwin-arm64": "^1.33.0",
+    "lightningcss-darwin-x64": "^1.33.0",
+    "lightningcss-linux-x64-gnu": "^1.33.0",
+    "lightningcss-linux-x64-musl": "^1.33.0"
   }
 }

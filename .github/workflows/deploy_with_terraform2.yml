@@ -1,0 +1,179 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: Environment to deploy
+        required: true
+        default: dev
+        options: [dev, staging, prod]
+
+env:
+  NODE_VERSION: "24"
+  AWS_REGION: us-east-1
+  ENVIRONMENT: ${{ inputs.environment || 'dev' }}
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-${{ inputs.environment || 'dev' }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        app: [frontend, backend]
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm test --if-present -- --coverage --watchAll=false
+
+  backend:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ inputs.environment || 'dev' }}   # prod: add required reviewers in repo settings
+    outputs:
+      api-url: ${{ steps.out.outputs.api-url }}
+      bucket: ${{ steps.out.outputs.bucket }}
+      cloudfront-id: ${{ steps.out.outputs.cloudfront-id }}
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+          terraform_wrapper: false      # makes `terraform output -raw` clean
+
+      - name: Terraform init
+        env:
+          TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+          TF_STATE_LOCK_TABLE: ${{ secrets.TF_STATE_LOCK_TABLE }}
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
+            -backend-config="key=envs/${ENVIRONMENT}/terraform.tfstate" \
+            -backend-config="region=${AWS_REGION}" \
+            -backend-config="dynamodb_table=${TF_STATE_LOCK_TABLE}"
+
+      - run: terraform fmt -check -recursive
+      - run: terraform validate
+
+      # Ensure the ECR repo exists before pushing (no-op after first run)
+      - name: Ensure ECR repository
+        run: |
+          terraform apply -input=false -auto-approve \
+            -target=aws_ecr_repository.backend \
+            -var-file="${ENVIRONMENT}.tfvars" \
+            -var="image_uri=placeholder"
+          echo "ECR_URL=$(terraform output -raw EcrRepositoryUrl)" >> "$GITHUB_ENV"
+
+      - uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          platforms: linux/arm64            # must match the Lambda architecture
+          provenance: false                 # Lambda rejects OCI indexes with attestations
+          tags: ${{ env.ECR_URL }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Terraform plan
+        run: |
+          terraform plan -input=false \
+            -var-file="${ENVIRONMENT}.tfvars" \
+            -var="image_uri=${ECR_URL}:${GITHUB_SHA}" \
+            -out=tfplan
+
+      - name: Terraform apply
+        run: terraform apply -input=false tfplan
+
+      - name: Read outputs
+        id: out
+        run: |
+          {
+            echo "api-url=$(terraform output -raw ApiUrl)"
+            echo "bucket=$(terraform output -raw FrontendBucketName)"
+            echo "cloudfront-id=$(terraform output -raw CloudFrontDistributionId)"
+          } >> "$GITHUB_OUTPUT"
+
+  frontend:
+    needs: backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ inputs.environment || 'dev' }}
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/cache@v4            # Next.js build cache only
+        with:
+          path: frontend/.next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}-${{ hashFiles('frontend/**/*.[jt]s', 'frontend/**/*.[jt]sx') }}
+          restore-keys: nextjs-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}-
+
+      - run: npm ci
+
+      - name: Build (static export)
+        env:
+          NEXT_PUBLIC_API_URL: ${{ needs.backend.outputs.api-url }}
+        run: npm run build                # next.config.js: output: 'export' -> ./out
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload to S3
+        env:
+          BUCKET: ${{ needs.backend.outputs.bucket }}
+        run: |
+          # Hashed assets: cache forever
+          aws s3 sync out/_next/static "s3://${BUCKET}/_next/static" \
+            --delete --cache-control "public,max-age=31536000,immutable"
+          # Everything else: always revalidate
+          aws s3 sync out "s3://${BUCKET}" \
+            --delete --exclude "_next/static/*" --cache-control "no-cache"
+
+      - name: Invalidate CloudFront
+        env:
+          DIST_ID: ${{ needs.backend.outputs.cloudfront-id }}
+        run: aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths "/*"

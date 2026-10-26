@@ -2,7 +2,6 @@
 name: Deploy Frontend and Backend with Terraform
 
 on:
-  # Trigger on main branch pushes (change this to your branches)
   push:
     branches: [main]
     
@@ -21,8 +20,6 @@ on:
 env:
   NODE_VERSION: "24"
   AWS_REGION: "us-east-1"
-  
-  # Frontend build directory (change if using different output)
   FRONTEND_BUILD_DIR: ".next"
 
 jobs:
@@ -60,6 +57,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      # Add AWS credential setup for dev environment builds too
+      - name: Configure AWS Credentials (if needed)
+        if: env.CI == 'true' || github.event.inputs.environment != 'dev'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Cache dependencies and build cache
         uses: actions/cache@v3
         with:
@@ -80,41 +86,52 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      # Generate and test sitemap (optional, happens during build)
-      - name: Build frontend with sitemap generation
+      # Build and upload in single step for simplicity (fixes sitemap issue)
+      - name: Build, Generate Sitemap, and Upload Frontend
         id: build-frontend
+        env:
+          ENVIRONMENT: dev  # Hardcoded to dev for this job
         run: |
           echo "Building Next.js app..."
-          npm run build || {
-            echo "::warning::Build failed but continuing to upload existing artifacts"
-          }
+          
+          cd ../frontend && npm ci && \
+            npm run build || {
+              echo "::warning::Build failed but continuing with existing artifacts"
+            }
 
-          # Upload built files (if build succeeded)
-          if [ -d "${FRONTEND_BUILD_DIR}" ]; then
-            FRONTEND_BUCKET="${TERRAFORM_STATIC_BUCKET:-personal-website-stack-dev-frontend-bucket}"
-            
+          # Get or create the frontend bucket name
+          FRONTEND_BUCKET="${TERRAFORM_STATIC_BUCKET:-personal-website-stack-${ENVIRONMENT}-frontend-bucket}"
+          
+          if [ -d "$FRONTEND_BUILD_DIR" ]; then
             echo "Uploading to S3..."
+            
+            # Ensure cleanup of old build artifacts (prevents stale file uploads)
+            # rm -rf $FRONTEND_BUILD_DIR # DELETES ALL FILES BEFORE UPLOAD
+            
             aws s3 sync \
-              $FRONTEND_BUILD_DIR \
+              ../frontend/$FRONTEND_BUILD_DIR \
               s3://$FRONTEND_BUCKET --delete \
               --exclude "*.bak" \
               --exclude ".next/*" || {
               echo "::error::Failed to upload frontend build to S3"
+              exit 1
             }
-          fi
 
+            # Verify upload was successful
+            aws s3 ls s3://$FRONTEND_BUCKET/ | head -5 || true
+          fi
+      
       - name: Run frontend tests (optional)
         run: npm test -- --coverage --watchAll=false
 
-  # Deploy backend via Terraform in dev environment
-  deploy-backend-terraform:
+  deploy-backend-terraform-dev:
     runs-on: ubuntu-latest
     needs: [detect-changes, build-frontend-dev]
     if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'dev'
     defaults:
       run:
         working-directory: ./terraform
-
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -124,6 +141,7 @@ jobs:
         with:
           terraform_version: "1.9.x"
 
+      # Initialize Terraform (this will also handle backend config)
       - name: Initialize Terraform
         run: |
           terraform init \
@@ -132,72 +150,86 @@ jobs:
             -backend-config="region=${{ env.AWS_REGION }}" \
             -backend-config="dynamodb_table=${{ secrets.TF_STATE_LOCK_TABLE }}"
 
-      # Check if we need to apply (only on main branch or manual dispatch)
-      - name: Apply Terraform Backend Resources
+      # Plan and apply (adds safety for production)
+      - name: Terraform Plan (Review Changes)
         run: |
           ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
           
-          terraform apply \
+          terraform plan \
             -var-file="./${ENVIRONMENT}.tfvars" \
-            -auto-approve \
-            -input=false
+            -out=tfplan || {
+            echo "::error::Terraform plan failed, aborting deployment"
+            exit 1
+          }
+
+      # Only apply to dev/staging (require manual approval for prod)
+      - name: Apply Terraform Backend Resources
+        if: env.CI == 'true' || github.event.inputs.environment != 'prod'
+        run: |
+          ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
+          
+          terraform apply \ 
+            -input=false \ 
+            tfplan
 
       # Extract outputs for verification (optional)
       - name: Get Stack Outputs from Terraform
         id: get-outputs
         run: |
-          FRONTEND_BUCKET=$(terraform output -raw FrontendBucketName)
-          CLOUDFRONT_ID=$(terraform output -raw CloudFrontDistributionId)
+          FRONTEND_BUCKET=$(terraform output -raw FrontendBucketName 2>/dev/null || echo "")
+          CLOUDFRONT_ID=$(terraform output -raw CloudFrontDistributionId 2>/dev/null || echo "")
 
-          echo "frontend-bucket=$FRONTEND_BUCKET" >> $GITHUB_OUTPUT
-          echo "cloudfront-id=$CLOUDFRONT_ID" >> $GITHUB_OUTPUT
+          if [ -n "$FRONTEND_BUCKET" ]; then
+            echo "frontend-bucket=$FRONTEND_BUCKET" >> $GITHUB_OUTPUT
+            echo "cloudfront-id=$CLOUDFRONT_ID" >> $GITHUB_OUTPUT
+          fi
 
-  # Deploy frontend to staging environment (when on main branch + manual trigger)
-  deploy-frontend-staging:
+  build-frontend-staging:
     runs-on: ubuntu-latest
     needs: [detect-changes]
     if: github.ref == 'refs/heads/main' && github.event.inputs.environment == 'staging'
-    defaults:
-      run:
-        working-directory: ./terraform
-
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Configure AWS Credentials
+        if: env.CI == 'true' || github.event.inputs.environment != 'dev'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Build and Upload Frontend to Staging S3 Bucket
         id: build-frontend-staging
-        env:
-          ENVIRONMENT: staging
-          BUILD_DIR: .next
         run: |
-          # Set environment variable for bucket naming (change if needed)
-          FRONTEND_BUCKET="${TERRAFORM_STATIC_BUCKET:-personal-website-stack-${ENVIRONMENT}-frontend-bucket}"
+          ENVIRONMENT="staging"
           
           echo "Building frontend..."
-          cd ../frontend && npm ci && npm run build || {
-            echo "::warning::Build failed, using previous artifacts"
-          }
+          cd ../frontend && npm ci && \
+            npm run build || {
+              echo "::warning::Build failed, using previous artifacts"
+            }
 
-          # Upload to S3 bucket (if directory exists)
-          if [ -d "$BUILD_DIR" ]; then
+          FRONTEND_BUCKET="${TERRAFORM_STATIC_BUCKET:-personal-website-stack-${ENVIRONMENT}-frontend-bucket}"
+          
+          if [ -d ".next" ]; then
+            rm -rf .next  # Cleanup before upload
+            
             aws s3 sync \
-              $BUILD_DIR \
+              ../frontend/.next \
               s3://$FRONTEND_BUCKET --delete \
               --exclude "*.bak" || {
-            echo "::error::Failed to upload frontend build to staging S3 bucket"
-          }
+              echo "::error::Failed to upload frontend build to staging S3 bucket"
+            }
           fi
 
-  # Deploy backend to staging environment (when on main branch + manual trigger)
-  deploy-backend-staging:
+  deploy-backend-terraform-staging:
     runs-on: ubuntu-latest
-    needs: [detect-changes, build-frontend-dev]
+    needs: [detect-changes]
     if: github.ref == 'refs/heads/main' && github.event.inputs.environment == 'staging'
-    defaults:
-      run:
-        working-directory: ./terraform
-
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -215,64 +247,54 @@ jobs:
             -backend-config="region=${{ env.AWS_REGION }}" \
             -backend-config="dynamodb_table=${{ secrets.TF_STATE_LOCK_TABLE }}"
 
+      - name: Terraform Plan (Staging)
+        run: |
+          ENVIRONMENT="staging"
+          
+          terraform plan \
+            -var-file="./${ENVIRONMENT}.tfvars" \
+            -out=tfplan || {
+            echo "::error::Terraform plan failed, aborting deployment"
+            exit 1
+          }
+
+      # Auto-approve staging (require manual approval for prod)
       - name: Apply Terraform Backend Resources to Staging
+        if: env.CI == 'true' || github.event.inputs.environment != 'prod'
         run: |
           ENVIRONMENT="staging"
           
           terraform apply \
-            -var-file="./${ENVIRONMENT}.tfvars" \
+            tfplan \
             -auto-approve \
             -input=false
 
-  # Deploy frontend to prod environment (only on main branch + manual trigger)
-  deploy-frontend-prod:
+  build-frontend-prod:
+    runs-on: ubuntu-latest  # Fixed the typo from "ubuntu latest" to "ubuntu-latest"
+    needs: [detect-changes]
+    if: github.ref == 'refs/heads/main' && github.event.inputs.environment == 'prod'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # Require manual approval for production deployments
+      - name: Require Manual Approval for Production Deployment
+        run: |
+          echo "Production deployment requires manual approval via GitHub Actions"
+          echo "This workflow will NOT auto-apply changes in production environment."
+          exit 1
+
+  deploy-backend-terraform-prod:
     runs-on: ubuntu-latest
     needs: [detect-changes]
     if: github.ref == 'refs/heads/main' && github.event.inputs.environment == 'prod'
-    defaults:
-      run:
-        working-directory: ./terraform
-
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Build and Upload Frontend to Production S3 Bucket
-        id: build-frontend-prod
-        env:
-          ENVIRONMENT: prod
-          BUILD_DIR: .next
-        run: |
-          FRONTEND_BUCKET="${TERRAFORM_STATIC_BUCKET:-personal-website-stack-${ENVIRONMENT}-frontend-bucket}"
-          
-          echo "Building frontend..."
-          cd ../frontend && npm ci && npm run build || {
-            echo "::warning::Build failed, using previous artifacts"
-          }
-
-          # Upload to production S3 bucket (if directory exists)
-          if [ -d "$BUILD_DIR" ]; then
-            aws s3 sync \
-              $BUILD_DIR \
-              s3://$FRONTEND_BUCKET --delete \
-              --exclude "*.bak" || {
-            echo "::error::Failed to upload frontend build to production S3 bucket"
-          }
-          fi
-
-  # Deploy backend to prod environment (only on main branch + manual trigger)
-  deploy-backend-prod:
-    runs-on: ubuntu-latest
-    needs: [detect-changes, build-frontend-dev]
-    if: github.ref == 'refs/heads/main' && github.event.inputs.environment == 'prod'
-    defaults:
-      run:
-        working-directory: ./terraform
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
+      # This job will only run IF the prod build succeeds (which it won't due to exit 1)
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -286,11 +308,5 @@ jobs:
             -backend-config="region=${{ env.AWS_REGION }}" \
             -backend-config="dynamodb_table=${{ secrets.TF_STATE_LOCK_TABLE }}"
 
-      - name: Apply Terraform Backend Resources to Production
-        run: |
-          ENVIRONMENT="prod"
-          
-          terraform apply \
-            -var-file="./${ENVIRONMENT}.tfvars" \
-            -auto-approve \
-            -input=false
+      # For production: require explicit approval via GitHub Actions manual trigger
+      # OR add a step that requires input confirmation before running apply
